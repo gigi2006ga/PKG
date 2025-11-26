@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Image Folder Viewer</title>
+<style>
+body {
+    margin: 0;
+    font-family: "Segoe UI", sans-serif;
+    background-color: #1c1c1c;
+    color: #e0e0e0;
+}
+.wrapper {
+    display: flex;
+    height: 100vh;
+}
+.sidebar {
+    width: 250px;
+    background-color: #2b2b2b;
+    padding: 20px;
+    overflow-y: auto;
+}
+.sidebar h2 {
+    margin-top: 0;
+    font-size: 1.2em;
+    border-bottom: 1px solid #444;
+    padding-bottom: 10px;
+}
+.folder-item {
+    display: flex;
+    align-items: center;
+    padding: 6px 4px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+.folder-item:hover { background-color: #3a3a3a; }
+.folder-item span { margin-left: 8px; }
+.main {
+    flex-grow: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+.controls {
+    margin-bottom: 15px;
+}
+.upload-btn {
+    padding: 10px 20px;
+    background-color: #3a3a3a;
+    border: none;
+    border-radius: 6px;
+    margin-right: 10px;
+    cursor: pointer;
+    color: #fff;
+    font-weight: bold;
+}
+.upload-btn:hover {
+    background-color: #505050;
+}
+#progressBar {
+    width: 100%;
+    height: 12px;
+    background-color: #3a3a3a;
+    border-radius: 6px;
+    overflow: hidden;
+    margin: 10px 0;
+}
+#progressFill {
+    height: 100%;
+    width: 0%;
+    background-color: #4caf50;
+    transition: width 0.2s;
+}
+.file-card {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    margin-bottom: 6px;
+    background-color: #2e2e2e;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+.file-card img {
+    width: 40px;
+    height: 40px;
+    margin-right: 10px;
+    object-fit: cover;
+    border-radius: 3px;
+}
+.file-info {
+    display: flex;
+    flex-direction: column;
+}
+.file-info span { font-size: 0.85em; }
+.file-card.error { background-color: rgba(255,0,0,0.3); }
+</style>
+</head>
+<body>
+
+<div class="wrapper">
+    <div class="sidebar">
+        <h2>📁 Папка</h2>
+        <div class="folder-item">Главная</div>
+    </div>
+
+    <div class="main">
+        <div class="controls">
+            <button class="upload-btn" id="fileInputFilesBtn">📂 Загрузить файлы</button>
+            <input type="file" id="fileInputFiles" accept="image/*" multiple hidden>
+
+            <button class="upload-btn" id="fileInputFolderBtn">📁 Загрузить папку</button>
+            <input type="file" id="fileInputFolder" accept="image/*" webkitdirectory multiple hidden>
+        </div>
+        <div id="progressBar"><div id="progressFill"></div></div>
+        <div id="fileCountDisplay">Обработано: <strong id="fileCount">0</strong></div>
+        <div id="totalSizeDisplay">Общий размер: <strong id="totalSize">0</strong> МБ</div>
+
+        <div id="cardsContainer"></div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/exifreader@4.21.1/dist/exif-reader.js"></script>
+<script>
+const fileInputFiles = document.getElementById('fileInputFiles');
+const fileInputFolder = document.getElementById('fileInputFolder');
+const fileInputFilesBtn = document.getElementById('fileInputFilesBtn');
+const fileInputFolderBtn = document.getElementById('fileInputFolderBtn');
+const fileCountEl = document.getElementById('fileCount');
+const totalSizeEl = document.getElementById('totalSize');
+const progressFill = document.getElementById('progressFill');
+const cardsContainer = document.getElementById('cardsContainer');
+
+fileInputFilesBtn.addEventListener('click', ()=>fileInputFiles.click());
+fileInputFolderBtn.addEventListener('click', ()=>fileInputFolder.click());
+fileInputFiles.addEventListener('change', (e)=>handleFiles(e.target.files));
+fileInputFolder.addEventListener('change', (e)=>handleFiles(e.target.files));
+
+async function handleFiles(files){
+    const imageFiles = Array.from(files).filter(f=>f.type.startsWith('image/'));
+    if(imageFiles.length===0) return;
+    cardsContainer.innerHTML='';
+    progressFill.style.width='0%';
+    let totalSize=0;
+
+    for(let i=0;i<imageFiles.length;i++){
+        const file=imageFiles[i];
+        try{
+            const data=await processFile(file);
+            addCard(file,data);
+            totalSize+=file.size;
+        }catch{
+            addErrorCard(file);
+        }
+        fileCountEl.textContent=`${i+1} / ${imageFiles.length}`;
+        totalSizeEl.textContent=(totalSize/(1024*1024)).toFixed(2);
+        progressFill.style.width=`${((i+1)/imageFiles.length)*100}%`;
+    }
+}
+
+async function processFile(file){
+    const [basicInfo, metaInfo]=await Promise.all([getBasicImageInfo(file), getMetaData(file)]);
+    const colorDepth=await getColorDepth(file,metaInfo);
+    const compressionInfo=getCompression(file,metaInfo,basicInfo);
+    return {...basicInfo, format:file.name.split('.').pop().toUpperCase(), colorDepth, compression:compressionInfo};
+}
+
+async function getColorDepth(file,meta){
+    const ext=file.name.split('.').pop().toLowerCase();
+    if(ext==='bmp'){const d=await readBmp(file); if(d!==null) return d+' бит';}
+    if(ext==='png'){const d=await readPng(file); if(d) return d;}
+    const bits=meta?.ifd0?.BitsPerSample?.value;
+    if(Array.isArray(bits)) return bits.reduce((a,b)=>a+b,0)+' бит';
+    if(ext==='gif') return '8 бит';
+    if(ext==='jpg'||ext==='jpeg') return '24 бита';
+    return 'Н/Д';
+}
+function readBmp(file){return new Promise(res=>{const r=new FileReader();r.onload=e=>{try{const d=new DataView(e.target.result);res(d.getUint16(28,true));}catch{res(null);}};r.onerror=()=>res(null);r.readAsArrayBuffer(file.slice(0,30));});}
+function readPng(file){return new Promise(res=>{const r=new FileReader();r.onload=e=>{try{const d=new DataView(e.target.result);if([0x89,0x50,0x4E,0x47].some((v,i)=>d.getUint8(i)!==v))return res(null);const depth=d.getUint8(24),ct=d.getUint8(25);let desc=depth+' бит';if(ct===2)desc=depth*3+' бит';if(ct===6)desc=depth*4+' бит';if(ct===3)desc=depth+' бит (индекс.)';res(desc);}catch{res(null);}};r.onerror=()=>res(null);r.readAsArrayBuffer(file.slice(0,30));});}
+function getBasicImageInfo(file){return new Promise((res,rej)=>{const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{URL.revokeObjectURL(url);res({width:img.naturalWidth,height:img.naturalHeight});};img.onerror=()=>{URL.revokeObjectURL(url);rej("Ошибка");};img.src=url;});}
+async function getMetaData(file){try{if(typeof ExifReader==='undefined')return null;return await ExifReader.load(file);}catch{return null;}}
+function getCompression(file,meta,basic){const ext=file.name.split('.').pop().toLowerCase();if(ext==='jpg'||ext==='jpeg')return `JPEG (~${calculateJpeg(file,basic)}%)`;if(meta?.ifd0?.Compression?.description)return meta.ifd0.Compression.description;switch(ext){case'png':return'LZ77';case'gif':return'LZW';case'bmp':return'Без сжатия';}return 'Н/Д';}
+function calculateJpeg(file,basic){const u=basic.width*basic.height*3,c=file.size;if(u>0&&c>0)return Math.max(0,Math.min(99,Math.round((1-c/u)*100)));return '?';}
+
+function addCard(file,data){
+    const card=document.createElement('div'); card.className='file-card';
+    const icon=document.createElement('img'); icon.src=URL.createObjectURL(file);
+    const info=document.createElement('div'); info.className='file-info';
+    info.innerHTML=`<span>${file.name}</span>
+                      <span>Расширение: ${data.format}</span>
+                      <span>Размер: ${data.width}×${data.height}</span>
+                      <span>Глубина: ${data.colorDepth}</span>
+                      <span>Сжатие: ${data.compression}</span>`;
+    card.appendChild(icon);
+    card.appendChild(info);
+    cardsContainer.appendChild(card);
+}
+
+function addErrorCard(file){
+    const card=document.createElement('div'); card.className='file-card error';
+    card.innerHTML=`<span>${file.name}</span><span>Ошибка при чтении</span>`;
+    cardsContainer.appendChild(card);
+}
+</script>
+</body>
+</html>
