@@ -11,25 +11,22 @@ class Point:
     y: int
 
 class RasterAlgorithms:
-    """Класс, реализующий базовые растровые алгоритмы"""
-    
     @staticmethod
     def step_by_step(x1: int, y1: int, x2: int, y2: int) -> List[Point]:
-        """Пошаговый алгоритм"""
         points = []
-        if x1 == x2:  # Вертикальная линия
+        if x1 == x2:
             for y in range(min(y1, y2), max(y1, y2) + 1):
                 points.append(Point(x1, y))
         else:
             k = (y2 - y1) / (x2 - x1)
             b = y1 - k * x1
             
-            if abs(k) <= 1:  # Более пологие линии
+            if abs(k) <= 1:
                 x_start, x_end = sorted([x1, x2])
                 for x in range(x_start, x_end + 1):
                     y = round(k * x + b)
                     points.append(Point(x, y))
-            else:  # Более крутые линии
+            else:
                 y_start, y_end = sorted([y1, y2])
                 for y in range(y_start, y_end + 1):
                     x = round((y - b) / k) if k != 0 else x1
@@ -38,7 +35,6 @@ class RasterAlgorithms:
     
     @staticmethod
     def dda(x1: int, y1: int, x2: int, y2: int) -> List[Point]:
-        """Алгоритм ЦДА (Digital Differential Analyzer)"""
         points = []
         
         dx = x2 - x1
@@ -65,7 +61,6 @@ class RasterAlgorithms:
     
     @staticmethod
     def bresenham_line(x1: int, y1: int, x2: int, y2: int) -> List[Point]:
-        """Алгоритм Брезенхема для отрезков"""
         points = []
         
         dx = abs(x2 - x1)
@@ -104,14 +99,12 @@ class RasterAlgorithms:
     
     @staticmethod
     def bresenham_circle(xc: int, yc: int, r: int) -> List[Point]:
-        """Алгоритм Брезенхема для окружности"""
         points = []
         x = 0
         y = r
         d = 3 - 2 * r
         
         def add_points(xc, yc, x, y):
-            """Добавляем 8 симметричных точек"""
             points.extend([
                 Point(xc + x, yc + y),
                 Point(xc - x, yc + y),
@@ -136,7 +129,6 @@ class RasterAlgorithms:
             
             add_points(xc, yc, x, y)
         
-        # Удаляем дубликаты
         unique_points = []
         seen = set()
         for p in points:
@@ -148,34 +140,27 @@ class RasterAlgorithms:
         return unique_points
 
 def plot_results(points, title, algorithm_name, grid_size=20):
-    """Создает график с результатами"""
     fig, ax = plt.subplots(figsize=(10, 10))
     
-    # Настраиваем сетку
     ax.set_xticks(np.arange(-grid_size, grid_size + 1, 1))
     ax.set_yticks(np.arange(-grid_size, grid_size + 1, 1))
     ax.grid(True, alpha=0.3, linestyle='--', linewidth=0.5)
     ax.set_axisbelow(True)
     
-    # Рисуем оси
     ax.axhline(y=0, color='black', linewidth=0.5)
     ax.axvline(x=0, color='black', linewidth=0.5)
     
-    # Устанавливаем пределы
     ax.set_xlim(-grid_size, grid_size)
     ax.set_ylim(-grid_size, grid_size)
     
-    # Подписи
     ax.set_xlabel('X координата', fontsize=12)
     ax.set_ylabel('Y координата', fontsize=12)
     ax.set_title(f"{algorithm_name}\n{title}", fontsize=14, pad=20)
     
-    # Отмечаем целочисленные точки сетки
     for i in range(-grid_size, grid_size + 1):
         for j in range(-grid_size, grid_size + 1):
             ax.plot(i, j, 'o', color='lightgray', markersize=3, alpha=0.5)
     
-    # Рисуем точки алгоритма
     x_vals = [p.x for p in points]
     y_vals = [p.y for p in points]
     
@@ -184,7 +169,6 @@ def plot_results(points, title, algorithm_name, grid_size=20):
     else:
         ax.plot(x_vals, y_vals, 's', color='blue', markersize=8)
     
-    # Подписываем некоторые точки
     if points and len(points) < 20:
         for i, p in enumerate(points[:10]):
             ax.text(p.x + 0.2, p.y + 0.2, f'({p.x},{p.y})', 
@@ -195,13 +179,11 @@ def plot_results(points, title, algorithm_name, grid_size=20):
     return fig
 
 def print_points_table(points, algorithm_name):
-    """Выводит таблицу точек"""
     print(f"\n{'='*60}")
     print(f"Алгоритм: {algorithm_name}")
     print(f"Количество точек: {len(points)}")
     print(f"{'='*60}")
     
-    # Выводим точки по 5 в строку
     for i in range(0, len(points), 5):
         row_points = points[i:i+5]
         row_str = "  ".join([f"({p.x:3},{p.y:3})" for p in row_points])
@@ -210,14 +192,12 @@ def print_points_table(points, algorithm_name):
     print(f"{'='*60}")
 
 def main():
-    """Основная функция консольного приложения"""
     print("="*60)
     print("ЛАБОРАТОРНАЯ РАБОТА 4: БАЗОВЫЕ РАСТРОВЫЕ АЛГОРИТМЫ")
     print("="*60)
     
     raster = RasterAlgorithms()
     
-    # Примеры для демонстрации
     examples = [
         {
             "name": "Пошаговый алгоритм",
@@ -243,17 +223,14 @@ def main():
     
     results = []
     
-    # Выполняем все алгоритмы
     for example in examples:
         print(f"\nВыполняется {example['name']}...")
         
-        # Измеряем время
         start_time = time.perf_counter()
         points = example['algorithm'](*example['params'])
         end_time = time.perf_counter()
-        execution_time = (end_time - start_time) * 1000  # мс
+        execution_time = (end_time - start_time) * 1000
         
-        # Сохраняем результаты
         results.append({
             "name": example['name'],
             "points": points,
@@ -261,11 +238,9 @@ def main():
             "params": example['params']
         })
         
-        # Выводим информацию
         print_points_table(points, example['name'])
         print(f"Время выполнения: {execution_time:.4f} мс")
         
-        # Для пошагового алгоритма показываем вычисления
         if example['name'] == "Пошаговый алгоритм":
             x1, y1, x2, y2 = example['params']
             if x1 != x2:
@@ -276,7 +251,6 @@ def main():
                 print(f"  b = y1 - k * x1 = {y1} - {k:.2f} * {x1} = {b:.2f}")
                 print(f"  Уравнение: y = {k:.2f}x + {b:.2f}")
         
-        # Для окружности показываем параметры
         elif example['name'] == "Алгоритм Брезенхема (окружность)":
             xc, yc, r = example['params']
             print(f"\nПараметры окружности:")
@@ -284,7 +258,6 @@ def main():
             print(f"  Радиус: {r}")
             print(f"  Начальное d = 3 - 2r = 3 - 2*{r} = {3 - 2*r}")
     
-    # Создаем графики
     print(f"\n{'='*60}")
     print("СОЗДАНИЕ ГРАФИКОВ...")
     
@@ -296,20 +269,18 @@ def main():
         
         fig = plot_results(result["points"], title, result["name"])
         
-        # Сохраняем график
         filename = f"алгоритм_{i+1}.png"
         fig.savefig(filename, dpi=150, bbox_inches='tight')
         print(f"  График сохранен: {filename}")
         plt.close(fig)
     
-    # Выводим сравнение производительности
     print(f"\n{'='*60}")
     print("СРАВНЕНИЕ ПРОИЗВОДИТЕЛЬНОСТИ АЛГОРИТМОВ")
     print(f"{'='*60}")
     print(f"{'Алгоритм':<35} {'Время (мс)':<15} {'Отн. скорость':<15}")
     print(f"{'-'*65}")
     
-    base_time = results[0]["time"]  # Время пошагового алгоритма
+    base_time = results[0]["time"]
     for result in results:
         rel_speed = base_time / result["time"] if result["time"] > 0 else 0
         print(f"{result['name']:<35} {result['time']:<15.4f} {rel_speed:<15.2f}")
@@ -322,7 +293,6 @@ def main():
     print("  алгоритм_4.png - Алгоритм Брезенхема (окружность)")
     print(f"{'='*60}")
     
-    # Инструкция для пользователя
     print(f"\nИНСТРУКЦИЯ:")
     print("1. Для изменения параметров отредактируйте код в функции main()")
     print("2. Все графики автоматически сохраняются в PNG файлы")
@@ -330,5 +300,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-    # Ожидаем нажатия Enter перед закрытием
     input("\nНажмите Enter для выхода...")
