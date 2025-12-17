@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Lab: Clean Science Edition (Letter Ж)</title>
+    
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.2.1/math.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <style>
+        
+        :root {
+            --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            --panel-bg: rgba(255, 255, 255, 0.75);
+            --panel-border: rgba(255, 255, 255, 0.6);
+            --text-main: #2d3436;
+            --primary: #6c5ce7; 
+            --primary-hover: #a29bfe;
+            --secondary: #00cec9; 
+            --danger: #ff7675;
+            --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+            --radius: 16px;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        
+        .plot-area {
+            flex: 1;
+            position: relative;
+        
+        }
+
+        
+        .control-panel {
+            width: 380px;
+            margin: 20px;
+            padding: 30px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--panel-border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow-y: auto;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        
+        .control-panel::-webkit-scrollbar { width: 6px; }
+        .control-panel::-webkit-scrollbar-track { background: transparent; }
+        .control-panel::-webkit-scrollbar-thumb { background: #b2bec3; border-radius: 10px; }
+
+        h3 {
+            margin: 0;
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 1.4rem;
+            text-align: left;
+            border-bottom: 2px solid rgba(108, 92, 231, 0.1);
+            padding-bottom: 15px;
+        }
+
+        .control-group {
+            background: rgba(255,255,255,0.5);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.8);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+            transition: transform 0.2s;
+        }
+
+        .control-group:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        label {
+            font-size: 0.85rem;
+            color: #636e72;
+            margin-bottom: 8px;
+            font-weight: 600;
+            display: block;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #dfe6e9;
+            border-radius: 8px;
+            background: #fff;
+            color: #2d3436;
+            font-family: 'Inter', sans-serif;
+            text-align: center;
+            font-weight: 500;
+            transition: border 0.3s;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        button:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3);
+        }
+
+        hr {
+            border: 0;
+            height: 1px;
+            background: #dfe6e9;
+            margin: 10px 0;
+        }
+
+        
+        .btn-action { background: linear-gradient(45deg, #0984e3, #74b9ff); }
+        .btn-reset { background: linear-gradient(45deg, #d63031, #ff7675); }
+        .btn-reset:hover { background: #e17055; }
+
+    
+        textarea {
+            width: 100%;
+            height: 140px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            border: 1px solid #dfe6e9;
+            border-radius: 8px;
+            background: #fdfdfd;
+            color: #2d3436;
+            padding: 12px;
+            box-sizing: border-box;
+            resize: none;
+        }
+
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(5px);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            width: 85%;
+            height: 85%;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #eee;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #f1f2f6;
+            padding-bottom: 15px;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: var(--text-main);
+        }
+
+        .close-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            padding: 0;
+            background: #f1f2f6;
+            color: #2d3436;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        .close-btn:hover { background: #dfe6e9; color: black; box-shadow: none; transform: none; }
+
+        .projections-grid {
+            display: flex;
+            flex: 1;
+            gap: 20px;
+        }
+
+        .proj-plot {
+            flex: 1;
+            background: #fafafa;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <div id="plot3d" class="plot-area"></div>
+
+        
+        <div class="control-panel">
+            <h3>🔹 Лабораторная 6: Буква "Ж"</h3>
+
+            <div class="control-group">
+                <label>Вращение по осям (°)</label>
+                <div class="input-row">
+                    <input type="number" id="rotX" value="0" placeholder="X">
+                    <button onclick="applyRotation('x')" style="width: 40%">X</button>
+                </div>
+                <div class="input-row">
+                    <input type="number" id="rotY" value="0" placeholder="Y">
+                    <button onclick="applyRotation('y')" style="width: 40%">Y</button>
+                </div>
+                <div class="input-row">
+                    <input type="number" id="rotZ" value="0" placeholder="Z">
+                    <button onclick="applyRotation('z')" style="width: 40%">Z</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>Масштаб</label>
+                <div class="input-row"><input type="number" id="scaleVal" value="1" step="0.1"></div>
+                <button onclick="applyScale()">Применить масштаб</button>
+            </div>
+
+            <div class="control-group">
+                <label>Сдвиг (X, Y, Z)</label>
+                <div class="input-row">
+                    <input type="number" id="transX" value="0" placeholder="X">
+                    <input type="number" id="transY" value="0" placeholder="Y">
+                    <input type="number" id="transZ" value="0" placeholder="Z">
+                </div>
+                <button onclick="applyTranslation()">Переместить</button>
+            </div>
+
+            <hr>
+
+            <button onclick="showProjections()" class="btn-action">📊 Открыть проекции</button>
+            <button onclick="resetView()" class="btn-reset">↺ Сброс настроек</button>
+
+            <hr>
+            
+            <label>Текущая матрица:</label>
+            <textarea id="matrixOutput" readonly></textarea>
+        </div>
+    </div>
+
+    
+    <div id="projModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Ортографические проекции</h2>
+                <button class="close-btn" onclick="closeProjections()">✕</button>
+            </div>
+            <div class="projections-grid">
+                <div id="projXY" class="proj-plot"></div>
+                <div id="projXZ" class="proj-plot"></div>
+                <div id="projYZ" class="proj-plot"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        
+        const initialVertices = [
+            
+            [0, 0, 1], [1, 0, 1], [2, 2, 1], [2, 0, 1], [3, 0, 1], [3, 2, 1], [4, 0, 1], [5, 0, 1], [3.5, 2.5, 1],
+            [5, 5, 1], [4, 5, 1], [3, 3, 1], [3, 5, 1], [2, 5, 1], [2, 3, 1], [1, 5, 1], [0, 5, 1], [1.5, 2.5, 1],
+            
+            [0, 0, 0], [1, 0, 0], [2, 2, 0], [2, 0, 0], [3, 0, 0], [3, 2, 0], [4, 0, 0], [5, 0, 0], [3.5, 2.5, 0],
+            [5, 5, 0], [4, 5, 0], [3, 3, 0], [3, 5, 0], [2, 5, 0], [2, 3, 0], [1, 5, 0], [0, 5, 0], [1.5, 2.5, 0]
+        ];
+
+        const edges = [
+            
+            [0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8], 
+            [8, 9], [9, 10], [10, 11], [11, 12], [12, 13], [13, 14], [14, 15], [15, 16], [16, 17], [17, 0],
+            
+            [18, 19], [19, 20], [20, 21], [21, 22], [22, 23], [23, 24], [24, 25], [25, 26],
+            [26, 27], [27, 28], [28, 29], [29, 30], [30, 31], [31, 32], [32, 33], [33, 34], [34, 35], [35, 18],
+            
+            [0, 18], [1, 19], [2, 20], [3, 21], [4, 22], [5, 23], [6, 24], [7, 25], 
+            [8, 26], [9, 27], [10, 28], [11, 29], [12, 30], [13, 31], [14, 32], [15, 33], [16, 34], [17, 35]
+        ];
+
+        let transformationMatrix = math.identity(4);
+
+        function getTransformedVertices() {
+            let verticesHomogeneous = initialVertices.map(v => [...v, 1]);
+            let matrixT = math.transpose(transformationMatrix);
+            let transformed = math.multiply(verticesHomogeneous, matrixT);
+            let arr = transformed.toArray();
+            return arr.map(v => [v[0], v[1], v[2]]);
+        }
+
+        function applyMatrix(newMatrix) {
+            transformationMatrix = math.multiply(newMatrix, transformationMatrix);
+            updateView();
+        }
+
+        function applyRotation(axis) {
+            let angleDeg = parseFloat(document.getElementById('rot' + axis.toUpperCase()).value);
+            let angle = angleDeg * (Math.PI / 180);
+            let M = math.identity(4).toArray();
+            let c = Math.cos(angle), s = Math.sin(angle);
+            if (axis === 'x') { M[1][1] = c; M[1][2] = -s; M[2][1] = s; M[2][2] = c; }
+            else if (axis === 'y') { M[0][0] = c; M[0][2] = s; M[2][0] = -s; M[2][2] = c; }
+            else { M[0][0] = c; M[0][1] = -s; M[1][0] = s; M[1][1] = c; }
+            applyMatrix(M);
+        }
+
+        function applyScale() {
+            let s = parseFloat(document.getElementById('scaleVal').value);
+            let M = math.identity(4).toArray();
+            M[0][0] = s; M[1][1] = s; M[2][2] = s;
+            applyMatrix(M);
+        }
+
+        function applyTranslation() {
+            let dx = parseFloat(document.getElementById('transX').value);
+            let dy = parseFloat(document.getElementById('transY').value);
+            let dz = parseFloat(document.getElementById('transZ').value);
+            let M = math.identity(4).toArray();
+            M[0][3] = dx; M[1][3] = dy; M[2][3] = dz;
+            applyMatrix(M);
+        }
+
+        function resetView() {
+            transformationMatrix = math.identity(4);
+            document.querySelectorAll('input').forEach(i => i.value = (i.id === 'scaleVal' ? 1 : 0));
+            updateView();
+        }
+
+    
+        function updateView() {
+            let currentVertices = getTransformedVertices();
+            let x = [], y = [], z = [];
+            edges.forEach(e => {
+                let p1 = currentVertices[e[0]], p2 = currentVertices[e[1]];
+                x.push(p1[0], p2[0], null); y.push(p1[1], p2[1], null); z.push(p1[2], p2[2], null);
+            });
+            let vx = currentVertices.map(v => v[0]), vy = currentVertices.map(v => v[1]), vz = currentVertices.map(v => v[2]);
+
+            let mat = transformationMatrix.toArray ? transformationMatrix.toArray() : transformationMatrix;
+            let matStr = mat.map(row => row.map(v => v.toFixed(2).padStart(7, ' ')).join('  ')).join('\n\n');
+            document.getElementById('matrixOutput').value = matStr;
+
+            
+            let layout = {
+                paper_bgcolor: "rgba(0,0,0,0)",
+                plot_bgcolor: "rgba(0,0,0,0)",
+                margin: { l: 0, r: 0, t: 0, b: 0 },
+                showlegend: false,
+                scene: {
+                    aspectmode: 'data',
+                    
+                    xaxis: { title: 'X', color: '#2d3436', gridcolor: '#b2bec3', zerolinecolor: '#636e72', backgroundcolor: "rgba(255,255,255,0.4)" },
+                    yaxis: { title: 'Y', color: '#2d3436', gridcolor: '#b2bec3', zerolinecolor: '#636e72', backgroundcolor: "rgba(255,255,255,0.4)" },
+                    zaxis: { title: 'Z', color: '#2d3436', gridcolor: '#b2bec3', zerolinecolor: '#636e72', backgroundcolor: "rgba(255,255,255,0.4)" },
+                    camera: { eye: { x: 1.5, y: 1.5, z: 1.5 } }
+                }
+            };
+
+            Plotly.react('plot3d', [
+                
+                { type: 'scatter3d', mode: 'lines', x: x, y: y, z: z, line: { width: 5, color: '#2d3436' }, opacity: 0.9 },
+                { type: 'scatter3d', mode: 'markers', x: vx, y: vy, z: vz, marker: { size: 5, color: '#e17055', symbol: 'circle' } }
+            ], layout);
+        }
+
+        
+        function showProjections() {
+            document.getElementById('projModal').style.display = 'flex';
+            let verts = getTransformedVertices();
+
+            const layout2d = (title, ax1, ax2) => ({
+                title: { text: title, font: { color: '#2d3436' } },
+                paper_bgcolor: "white",
+                plot_bgcolor: "#f9f9f9",
+                margin: { l: 40, r: 20, t: 40, b: 40 },
+                xaxis: { title: ax1, color: '#2d3436', gridcolor: '#eee' },
+                yaxis: { title: ax2, color: '#2d3436', gridcolor: '#eee' }
+            });
+
+            const plot2d = (div, i1, i2, title, ax1, ax2) => {
+                let x = [], y = [];
+                edges.forEach(e => {
+                    x.push(verts[e[0]][i1], verts[e[1]][i1], null);
+                    y.push(verts[e[0]][i2], verts[e[1]][i2], null);
+                });
+                Plotly.newPlot(div, [
+                    { type: 'scatter', mode: 'lines', x: x, y: y, line: { color: '#6c5ce7', width: 2 } },
+                    { type: 'scatter', mode: 'markers', x: verts.map(v => v[i1]), y: verts.map(v => v[i2]), marker: { color: '#e17055', size: 6 } }
+                ], layout2d(title, ax1, ax2));
+            };
+
+            plot2d('projXY', 0, 1, 'XY (Вид сверху)', 'X', 'Y');
+            plot2d('projXZ', 0, 2, 'XZ (Вид спереди)', 'X', 'Z');
+            plot2d('projYZ', 1, 2, 'YZ (Вид сбоку)', 'Y', 'Z');
+        }
+
+        function closeProjections() { document.getElementById('projModal').style.display = 'none'; }
+
+        updateView();
+        window.onresize = () => Plotly.Plots.resize('plot3d');
+    </script>
+</body>
+</html>
